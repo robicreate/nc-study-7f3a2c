@@ -1,6 +1,6 @@
 // Offline cache. Network-first for the page so updates show right away when online;
 // falls back to cache when offline. Bump CACHE to force a clean refresh on deploys.
-const CACHE = 'nursing-chem-v2';
+const CACHE = 'nursing-chem-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -14,6 +14,9 @@ const ASSETS = [
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
+
+// Page asks a freshly-installed worker to activate immediately.
+self.addEventListener('message', e => { if (e.data === 'skip-waiting') self.skipWaiting(); });
 
 self.addEventListener('activate', e => {
   e.waitUntil(

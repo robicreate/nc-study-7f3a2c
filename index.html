@@ -105,6 +105,18 @@
   .rate .easy{border-color:#1f6e52}.rate .easy:hover{border-color:var(--good);background:rgba(34,197,94,.10)}
   .srs-badge{font-size:12px;background:rgba(56,189,248,.14);color:var(--acc1);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-weight:600;vertical-align:middle}
   .tap-hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;opacity:.6}
+  .picker{margin:10px 0}
+  .picker>summary{font-size:14px}
+  .picker-actions{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+  .chip{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;transition:.12s}
+  .chip:hover{border-color:var(--acc1)}
+  .chip.add{border-color:#1f6e52;color:var(--acc2)}
+  .picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:6px;max-height:300px;overflow-y:auto;padding:4px 2px}
+  .pick{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;cursor:pointer;user-select:none}
+  .pick.on{border-color:var(--acc1);background:#13314a}
+  .pick input{accent-color:var(--acc1);margin:0}
+  .pick .n{color:var(--mut);font-size:11px;min-width:16px}
+  .pick .s{font-weight:700}
 
   /* Game shells */
   .stat{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 4px;font-size:14px}
@@ -383,6 +395,21 @@
     <button class="btn" id="practiceBtn">♾️ Practice all</button>
     <button class="btn" id="resetBtn">↺ Reset</button>
   </div>
+  <details class="picker" id="picker">
+    <summary>⚙️ Choose which elements to study (<b id="activeCount">10</b> of 47)</summary>
+    <p class="lead" style="margin:8px 0 6px">Start small and add more when she's ready. Use a quick set, add 10 at a time, or tick exactly the ones she wants. (Only affects the <b>Element Symbols</b> deck and Symbol Match.)</p>
+    <div class="picker-actions">
+      <button class="chip" data-preset="10">First 10</button>
+      <button class="chip" data-preset="20">First 20</button>
+      <button class="chip" data-preset="30">First 30</button>
+      <button class="chip" data-preset="40">First 40</button>
+      <button class="chip" data-preset="all">All 47</button>
+      <button class="chip add" id="add10">➕ Add 10 more</button>
+      <button class="chip" data-preset="body">🩺 Body elements</button>
+      <button class="chip" data-preset="none">Clear</button>
+    </div>
+    <div class="picker-grid" id="pickGrid"></div>
+  </details>
   <div class="stat">
     <span>🆕 New: <b id="sNew">0</b></span>
     <span>📒 Learning: <b id="sLearn">0</b></span>
@@ -562,9 +589,19 @@ function saveSRS(){ try{localStorage.setItem(SRS_KEY,JSON.stringify(srs));}catch
 const fcard=document.getElementById('fcard');
 let fcSession=[], fcPos=0, fcPractice=false;
 
+/* ----- which elements are in the active study set (progressive) ----- */
+const ACTIVE_KEY='nc_active_elems';
+const ELEM_SYMS=ELEMENTS.map(e=>e[0]);          // 47 symbols in slide order
+// "Body elements": CHON + major minerals + trace elements that appear in our deck
+const BODY_SET=['C','H','O','N','Na','K','Cl','Mg','S','Ca','P','Fe','Zn','I','Cu','Mn','Co','Cr','Se','F','B','Si','As'].filter(s=>ELEM_SYMS.includes(s));
+let activeElems = (()=>{ try{const v=JSON.parse(localStorage.getItem(ACTIVE_KEY)); return Array.isArray(v)&&v.length?v:ELEM_SYMS.slice(0,10);}catch(e){return ELEM_SYMS.slice(0,10);} })();
+function saveActive(){ try{localStorage.setItem(ACTIVE_KEY,JSON.stringify(activeElems));}catch(e){} }
+function isActive(s){ return activeElems.includes(s); }
+function activeElementPairs(){ return ELEMENTS.filter(([s])=>isActive(s)); }
+
 function allCards(){
   const d=deckSel.value; let cards=[];
-  if(d==='symbols'||d==='all') cards=cards.concat(ELEMENTS.map(([s,n])=>({id:'sym:'+s,front:s,frontLbl:'symbol',back:n,extra:ELEM_NOTE[s]||''})));
+  if(d==='symbols'||d==='all') cards=cards.concat(activeElementPairs().map(([s,n])=>({id:'sym:'+s,front:s,frontLbl:'symbol',back:n,extra:ELEM_NOTE[s]||''})));
   if(d==='concepts'||d==='all') cards=cards.concat(CONCEPTS.map(([q,a,e],i)=>({id:'con:'+i,front:q,frontLbl:'concept',back:a,extra:e||''})));
   return cards;
 }
@@ -652,6 +689,48 @@ resetBtn.onclick=()=>{
     allCards().forEach(c=>{ delete srs[c.id]; }); saveSRS(); startReview();
   }
 };
+
+/* ----- element picker rendering + actions ----- */
+const pickGrid=document.getElementById('pickGrid');
+function elemNumber(i){ return i<40 ? (i+1)+'' : ''; }   // first 40 have atomic numbers; extras blank
+function renderPicker(){
+  pickGrid.innerHTML='';
+  ELEMENTS.forEach(([s,n],i)=>{
+    const on=isActive(s);
+    const lab=document.createElement('label');
+    lab.className='pick'+(on?' on':'');
+    lab.innerHTML=`<input type="checkbox" ${on?'checked':''}><span class="n">${elemNumber(i)}</span><span class="s">${s}</span> <span>${n}</span>`;
+    lab.querySelector('input').addEventListener('change',e=>{
+      if(e.target.checked){ if(!isActive(s)) activeElems.push(s); }
+      else { activeElems=activeElems.filter(x=>x!==s); }
+      saveActive(); lab.classList.toggle('on',e.target.checked); afterActiveChange();
+    });
+    pickGrid.appendChild(lab);
+  });
+  refreshPickerCount();
+}
+function refreshPickerCount(){
+  document.getElementById('activeCount').textContent=activeElems.length;
+  deckSel.options[0].textContent=`Deck: Element Symbols (${activeElems.length})`;
+}
+function afterActiveChange(){ refreshPickerCount(); startReview(); }
+function setActive(list){ activeElems=list.slice(); saveActive(); renderPicker(); afterActiveChange(); }
+document.querySelectorAll('.picker-actions [data-preset]').forEach(btn=>{
+  btn.onclick=()=>{
+    const p=btn.dataset.preset;
+    if(p==='all') setActive(ELEM_SYMS);
+    else if(p==='none') setActive([]);
+    else if(p==='body') setActive(BODY_SET);
+    else setActive(ELEM_SYMS.slice(0, parseInt(p)));
+  };
+});
+document.getElementById('add10').onclick=()=>{
+  // add the next 10 elements (in slide order) that aren't active yet
+  const next=ELEM_SYMS.filter(s=>!isActive(s)).slice(0,10);
+  if(!next.length){ alert("All 47 elements are already in the study set. 🎉"); return; }
+  setActive(activeElems.concat(next));
+};
+renderPicker();
 startReview();
 
 /* ---------- SYMBOL MATCH ---------- */
@@ -662,8 +741,11 @@ function newMatch(){
   clearInterval(mTimer); mSel=null; mMatched=0; mMiss=0;
   document.getElementById('mMatched').textContent='0';
   document.getElementById('mMiss').textContent='0';
-  document.getElementById('mFeed').textContent='';
-  const pick=shuffle(ELEMENTS).slice(0,6);
+  const feedEl=document.getElementById('mFeed'); feedEl.style.color=''; feedEl.textContent='';
+  // Use her active study set; fall back to all 47 if she has fewer than 6 selected.
+  let poolSrc=activeElementPairs();
+  if(poolSrc.length<6){ poolSrc=ELEMENTS; feedEl.style.color='var(--mut)'; feedEl.textContent='Tip: pick at least 6 elements in the Flashcards tab to match only those.'; }
+  const pick=shuffle(poolSrc).slice(0,6);
   let tiles=[];
   pick.forEach(([s,n],i)=>{tiles.push({k:i,txt:s,type:'sym'});tiles.push({k:i,txt:n,type:'name'});});
   tiles=shuffle(tiles);
@@ -843,10 +925,27 @@ document.getElementById('qReview').onclick=()=>startQuiz(qMissed.slice());
 document.getElementById('qRestart').onclick=()=>startQuiz();
 </script>
 <script>
-/* Register offline service worker so the app works with no internet once installed. */
+/* Offline service worker that also SELF-UPDATES: when a new version is deployed,
+   it installs in the background and the page reloads once to apply it. This prevents
+   the "stuck on an old cached version" problem. */
 if ('serviceWorker' in navigator) {
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return; reloading = true; location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.update();                       // check for a newer version on every load
+      setInterval(() => reg.update(), 60 * 60 * 1000);  // and hourly while open
+      reg.addEventListener('updatefound', () => {
+        const sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener('statechange', () => {
+          // a new worker is ready and an old one was controlling -> let it take over
+          if (sw.state === 'installed' && navigator.serviceWorker.controller) sw.postMessage('skip-waiting');
+        });
+      });
+    }).catch(()=>{});
   });
 }
 </script>
