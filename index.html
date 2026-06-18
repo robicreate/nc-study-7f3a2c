@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Elements &amp; Compounds — Nursing Study App</title>
+<!-- Installable web app (Add to Home Screen) -->
+<meta name="theme-color" content="#0f1623">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nursing Chem">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<style>
+  :root{
+    --bg:#0f1623; --panel:#17202f; --panel2:#1e293b; --ink:#e8eef7; --mut:#9fb0c7;
+    --acc:#6366f1; --acc1:#38bdf8; --acc2:#34d399; --acc3:#f472b6; --acc4:#fbbf24;
+    --line:#2a3852; --good:#22c55e; --bad:#ef4444; --shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%,#1b2740 0%,var(--bg) 55%);
+    color:var(--ink); line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  header{
+    padding:calc(28px + env(safe-area-inset-top)) 20px 18px; text-align:center;
+    border-bottom:1px solid var(--line); position:sticky; top:0; z-index:50;
+    background:rgba(15,22,35,.82); backdrop-filter:blur(10px);
+  }
+  header h1{margin:0;font-size:24px;letter-spacing:.3px}
+  header p{margin:4px 0 14px;color:var(--mut);font-size:13px}
+  nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  nav button{
+    background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+    padding:9px 16px;border-radius:999px;font-size:14px;cursor:pointer;transition:.15s;font-weight:600;
+  }
+  nav button:hover{border-color:var(--acc1);transform:translateY(-1px)}
+  nav button.active{background:linear-gradient(135deg,var(--acc1),#6366f1);border-color:transparent;color:#06121f}
+  main{max-width:920px;margin:0 auto;padding:26px 18px 80px}
+  section{display:none;animation:fade .35s ease}
+  section.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h2{font-size:22px;margin:8px 0 6px;display:flex;align-items:center;gap:10px}
+  h3{font-size:17px;margin:26px 0 8px;color:var(--acc1)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin:16px 0;box-shadow:var(--shadow)}
+  .lead{color:var(--mut);font-size:14px;margin-top:-2px}
+  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:2px 9px;font-size:12px;color:var(--acc2);font-weight:600;margin:2px}
+  .why{border-left:3px solid var(--acc3);background:rgba(244,114,182,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+  .why b{color:var(--acc3)}
+  .nurse{border-left:3px solid var(--acc2);background:rgba(52,211,153,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+  .nurse b{color:var(--acc2)}
+  .fun{border-left:3px solid var(--acc4);background:rgba(251,191,36,.08);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+  .fun b{color:var(--acc4)}
+  .tip{border-left:3px solid var(--acc1);background:rgba(56,189,248,.07);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0}
+  .tip b{color:var(--acc1)}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  th{background:var(--panel2);color:var(--acc1)}
+  td .sym{font-weight:700;color:var(--ink)}
+  ul{margin:8px 0 8px 2px;padding-left:20px}
+  li{margin:5px 0}
+  .formula{font-family:"SF Mono",Menlo,Consolas,monospace;background:var(--panel2);padding:2px 7px;border-radius:6px;color:var(--acc4);font-weight:700}
+  sub{font-size:.72em}
+  details{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0}
+  summary{cursor:pointer;font-weight:600;color:var(--acc1)}
+  details[open] summary{margin-bottom:8px}
+  .answer{color:var(--acc2);font-weight:700}
+
+  /* Flashcards */
+  .fc-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+  select,.btn{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font-size:14px;cursor:pointer;font-weight:600}
+  .btn:hover{border-color:var(--acc1)}
+  .btn.primary{background:linear-gradient(135deg,var(--acc1),#6366f1);border:none;color:#06121f}
+  .flash{
+    perspective:1400px;height:300px;margin:14px 0;cursor:pointer;
+  }
+  .flash-inner{position:relative;width:100%;height:100%;transition:transform .55s;transform-style:preserve-3d}
+  .flash.flipped .flash-inner{transform:rotateY(180deg)}
+  .face{
+    position:absolute;inset:0;backface-visibility:hidden;border-radius:18px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:24px;border:1px solid var(--line);box-shadow:var(--shadow)
+  }
+  .front{background:linear-gradient(160deg,#1e293b,#172033)}
+  .back{background:linear-gradient(160deg,#13314a,#0f2336);transform:rotateY(180deg)}
+  .face .big{font-size:64px;font-weight:800;letter-spacing:1px;line-height:1.1}
+  .face .lbl{color:var(--mut);font-size:13px;margin-top:10px;text-transform:uppercase;letter-spacing:1.5px}
+  .face .detail{font-size:16px;margin-top:6px;color:var(--ink)}
+  .face .extra{font-size:13px;color:var(--acc2);margin-top:12px;max-width:560px}
+  .counter{color:var(--mut);font-size:13px;text-align:center;margin-top:6px}
+  .rate{display:flex;gap:8px;justify-content:center;margin-top:10px}
+
+  /* Game shells */
+  .stat{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 4px;font-size:14px}
+  .stat span{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+  .stat b{color:var(--acc4)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:14px 0}
+  .tile{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 8px;text-align:center;cursor:pointer;font-weight:700;transition:.12s;user-select:none}
+  .tile:hover{border-color:var(--acc1);transform:translateY(-2px)}
+  .tile.sel{border-color:var(--acc4);background:#243049}
+  .tile.matched{opacity:.25;pointer-events:none;border-color:var(--good)}
+  .tile.wrong{animation:shake .35s}
+  @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .qbox{font-size:20px;text-align:center;margin:18px 0 10px;min-height:30px}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0}
+  .opt{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;cursor:pointer;font-weight:600;transition:.12s}
+  .opt:hover{border-color:var(--acc1)}
+  .opt.right{background:rgba(34,197,94,.18);border-color:var(--good)}
+  .opt.wrong{background:rgba(239,68,68,.18);border-color:var(--bad)}
+  .feedback{text-align:center;min-height:26px;font-weight:700;margin:6px 0}
+  input[type=number],input[type=text]{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:9px 12px;font-size:15px;width:90px;font-weight:700}
+  .atomrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
+  .atomrow label{min-width:130px}
+  .big-formula{font-family:"SF Mono",Menlo,monospace;font-size:34px;text-align:center;margin:10px 0;color:var(--acc4);font-weight:800}
+  .progress{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden;margin:10px 0}
+  .progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--acc1),var(--acc2));width:0;transition:width .3s}
+  .confetti{font-size:40px;text-align:center;margin:10px}
+  footer{text-align:center;color:var(--mut);font-size:12px;padding:30px 20px}
+  @media(max-width:560px){.opts{grid-template-columns:1fr}.face .big{font-size:48px}.flash{height:260px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚗️ Elements &amp; Compounds</h1>
+  <p>A friendlier lecture + flashcards + games for nursing chemistry</p>
+  <nav id="nav">
+    <button data-t="lecture" class="active">📖 Lecture</button>
+    <button data-t="problems">✏️ Problem Sets</button>
+    <button data-t="flash">🃏 Flashcards</button>
+    <button data-t="match">🎯 Symbol Match</button>
+    <button data-t="formula">🔬 Formula Detective</button>
+    <button data-t="quiz">🧠 Why Quiz</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ================= LECTURE ================= -->
+<section id="lecture" class="active">
+  <h2>📖 The Lecture (in plain English)</h2>
+  <p class="lead">Everything from the 9 slides, re-explained with the "why," nursing connections, memory tricks, and fun facts.</p>
+
+  <div class="card">
+    <h3>1. What is an Element?</h3>
+    <p>An <b>element</b> is a pure substance that <b>cannot be broken down into anything simpler by a chemical reaction</b>. Think of elements as the "letters of the alphabet" of all matter, every single thing around you is built from them.</p>
+    <ul>
+      <li>There are <b>118 known elements</b>. About <b>90 occur naturally</b>; the other ~28 are <b>made artificially</b> in labs.</li>
+      <li>Each element has a <b>1- or 2-letter symbol</b> (like <span class="pill">Ca = calcium</span> <span class="pill">Fe = iron</span> <span class="pill">O = oxygen</span>).</li>
+    </ul>
+    <div class="tip"><b>💡 The #1 rule everyone gets wrong:</b> The first letter is ALWAYS capital, the second letter is ALWAYS lowercase. So cobalt is <b>Co</b>, not CO. That matters a lot, because <b>CO</b> (capital C, capital O) means carbon monoxide, a deadly gas! One is an element, the other is a compound.</div>
+    <div class="why"><b>Why two letters?</b> There are only 26 letters but 118 elements, so single letters ran out fast. Some symbols even come from <b>Latin names</b> — that's why iron is Fe (<i>ferrum</i>), sodium is Na (<i>natrium</i>), and potassium is K (<i>kalium</i>). These trip up nursing students constantly because the symbol doesn't match the English word.</div>
+    <div class="fun"><b>🎉 Fun fact:</b> Only one element is named after a fictional character... none — but several are named after places (Californium, Americium) and scientists (Einsteinium, Curium). Seaborgium (Sg) on your slide is named after Glenn Seaborg, the only person who was alive when "his" element was named.</div>
+  </div>
+
+  <div class="card">
+    <h3>2. The Symbols You Must Memorize</h3>
+    <p>Your slide says: know the <b>first 40 elements</b> + these 7 extras: <b>Ag, Au, Hg, Pb, Sb, Sn, I</b>. Below is the full list. (Use the <b>Flashcards</b> and <b>Symbol Match</b> tabs to drill these, that's the fastest way.)</p>
+    <details>
+      <summary>👉 Show all 40 + the 7 extras</summary>
+      <table>
+        <tr><th>#</th><th>Symbol</th><th>Name</th><th>#</th><th>Symbol</th><th>Name</th></tr>
+        <tr><td>1</td><td class="sym">H</td><td>Hydrogen</td><td>21</td><td class="sym">Sc</td><td>Scandium</td></tr>
+        <tr><td>2</td><td class="sym">He</td><td>Helium</td><td>22</td><td class="sym">Ti</td><td>Titanium</td></tr>
+        <tr><td>3</td><td class="sym">Li</td><td>Lithium</td><td>23</td><td class="sym">V</td><td>Vanadium</td></tr>
+        <tr><td>4</td><td class="sym">Be</td><td>Beryllium</td><td>24</td><td class="sym">Cr</td><td>Chromium</td></tr>
+        <tr><td>5</td><td class="sym">B</td><td>Boron</td><td>25</td><td class="sym">Mn</td><td>Manganese</td></tr>
+        <tr><td>6</td><td class="sym">C</td><td>Carbon</td><td>26</td><td class="sym">Fe</td><td>Iron</td></tr>
+        <tr><td>7</td><td class="sym">N</td><td>Nitrogen</td><td>27</td><td class="sym">Co</td><td>Cobalt</td></tr>
+        <tr><td>8</td><td class="sym">O</td><td>Oxygen</td><td>28</td><td class="sym">Ni</td><td>Nickel</td></tr>
+        <tr><td>9</td><td class="sym">F</td><td>Fluorine</td><td>29</td><td class="sym">Cu</td><td>Copper</td></tr>
+        <tr><td>10</td><td class="sym">Ne</td><td>Neon</td><td>30</td><td class="sym">Zn</td><td>Zinc</td></tr>
+        <tr><td>11</td><td class="sym">Na</td><td>Sodium</td><td>31</td><td class="sym">Ga</td><td>Gallium</td></tr>
+        <tr><td>12</td><td class="sym">Mg</td><td>Magnesium</td><td>32</td><td class="sym">Ge</td><td>Germanium</td></tr>
+        <tr><td>13</td><td class="sym">Al</td><td>Aluminum</td><td>33</td><td class="sym">As</td><td>Arsenic</td></tr>
+        <tr><td>14</td><td class="sym">Si</td><td>Silicon</td><td>34</td><td class="sym">Se</td><td>Selenium</td></tr>
+        <tr><td>15</td><td class="sym">P</td><td>Phosphorus</td><td>35</td><td class="sym">Br</td><td>Bromine</td></tr>
+        <tr><td>16</td><td class="sym">S</td><td>Sulfur</td><td>36</td><td class="sym">Kr</td><td>Krypton</td></tr>
+        <tr><td>17</td><td class="sym">Cl</td><td>Chlorine</td><td>37</td><td class="sym">Rb</td><td>Rubidium</td></tr>
+        <tr><td>18</td><td class="sym">Ar</td><td>Argon</td><td>38</td><td class="sym">Sr</td><td>Strontium</td></tr>
+        <tr><td>19</td><td class="sym">K</td><td>Potassium</td><td>39</td><td class="sym">Y</td><td>Yttrium</td></tr>
+        <tr><td>20</td><td class="sym">Ca</td><td>Calcium</td><td>40</td><td class="sym">Zr</td><td>Zirconium</td></tr>
+      </table>
+      <table>
+        <tr><th>Symbol</th><th>Name</th><th>Latin / why it's weird</th></tr>
+        <tr><td class="sym">Ag</td><td>Silver</td><td><i>argentum</i></td></tr>
+        <tr><td class="sym">Au</td><td>Gold</td><td><i>aurum</i></td></tr>
+        <tr><td class="sym">Hg</td><td>Mercury</td><td><i>hydrargyrum</i> ("liquid silver")</td></tr>
+        <tr><td class="sym">Pb</td><td>Lead</td><td><i>plumbum</i> (root of "plumbing")</td></tr>
+        <tr><td class="sym">Sb</td><td>Antimony</td><td><i>stibium</i></td></tr>
+        <tr><td class="sym">Sn</td><td>Tin</td><td><i>stannum</i></td></tr>
+        <tr><td class="sym">I</td><td>Iodine</td><td>(easy one!)</td></tr>
+      </table>
+    </details>
+    <div class="tip"><b>💡 Memory trick:</b> Don't cram all 47 at once. Do <b>10 per day</b> with the flashcards, then mix the old ones back in. The "Latin 7" (Ag, Au, Hg, Pb, Sb, Sn) are the ones professors love to test because the symbol hides the English name, give those extra reps.</div>
+  </div>
+
+  <div class="card">
+    <h3>3. Elements in the Human Body</h3>
+    <p>Living things <b>selectively pull elements</b> from their environment, so your body's "recipe" looks <b>nothing like the Earth's crust</b>. (Earth is loaded with silicon and aluminum; you are mostly oxygen, carbon, and hydrogen.) Your body is picky on purpose, it grabs exactly what it needs for life.</p>
+    <div class="nurse"><b>🩺 Nursing tie-in:</b> This is the whole foundation of <b>nutrition, IV fluids, and lab values</b>. Every electrolyte panel you'll ever read (Na, K, Cl, Ca, Mg) is just "which elements, and how much" — exactly this slide.</div>
+  </div>
+
+  <div class="card">
+    <h3>4. Building-Block Elements (the big 4: CHON)</h3>
+    <p><b>96% of your body mass</b> is just four nonmetals:</p>
+    <p style="text-align:center;font-size:24px;font-weight:800;letter-spacing:2px;color:var(--acc1)">C · H · O · N</p>
+    <p style="text-align:center;color:var(--mut)">Carbon · Hydrogen · Oxygen · Nitrogen</p>
+    <ul>
+      <li><b>Oxygen + Hydrogen</b> make <b>water (H₂O)</b> — the most abundant substance in your body.</li>
+      <li><b>C, H, O</b> are in all <b>4 biological molecules</b>: <b>carbohydrates, lipids, proteins, nucleic acids</b>.</li>
+      <li><b>Nitrogen</b> is the special one: it's in <b>proteins</b> and <b>nucleic acids (DNA/RNA)</b> only.</li>
+    </ul>
+    <div class="tip"><b>💡 Mnemonic:</b> Remember <b>"CHON"</b> (sounds like "Shawn"). The big four building blocks = <b>"Shawn"</b> builds your body. And for the 4 biomolecules: <b>"Carbs, Lipids, Proteins, Nucleic acids"</b> → <b>"CLiP-N"</b>.</div>
+    <div class="nurse"><b>🩺 Nursing tie-in:</b> Nitrogen is why we track <b>BUN (Blood Urea Nitrogen)</b> for kidney function — protein breakdown releases nitrogen as urea. "Nitrogen lives in protein" is a fact you'll use on the floor.</div>
+    <div class="fun"><b>🎉 Fun fact:</b> By mass you're ~65% oxygen, but most of that is locked inside water, not the air you breathe. You're basically a very organized puddle.</div>
+  </div>
+
+  <div class="card">
+    <h3>5. Major Minerals — Macronutrients</h3>
+    <p>These make up <b>0.1% to 2%</b> of body mass. You need <b>at least 100 mg of each per day</b>. Memorize them by <b>where they work</b>:</p>
+    <table>
+      <tr><th>Where</th><th>Minerals</th></tr>
+      <tr><td>Body <b>fluids</b> (electrolytes)</td><td><span class="sym">K</span> Potassium, <span class="sym">Na</span> Sodium, <span class="sym">Cl</span> Chlorine</td></tr>
+      <tr><td>Proteins in <b>muscles</b></td><td><span class="sym">Mg</span> Magnesium, <span class="sym">S</span> Sulfur</td></tr>
+      <tr><td><b>Teeth &amp; bones</b></td><td><span class="sym">Ca</span> Calcium, <span class="sym">P</span> Phosphorus</td></tr>
+    </table>
+    <p>Bonus: <b>Phosphorus (P)</b> is also in <b>nucleic acids</b> (the backbone of DNA/RNA).</p>
+    <div class="nurse"><b>🩺 Nursing tie-in:</b> "Fluid minerals" = <b>your electrolytes</b>. Low potassium (<b>hypokalemia</b>) can stop a heart; sodium controls fluid balance; calcium runs muscle contraction and clotting. This single table is the seed of half of med-surg nursing.</div>
+    <div class="tip"><b>💡 Trick:</b> The "100 mg club" — if you need <b>≥100 mg/day</b>, it's a <b>major</b> mineral. Less than that = trace (next section).</div>
+  </div>
+
+  <div class="card">
+    <h3>6. Trace Elements — Micronutrients</h3>
+    <p>Each is under <b>0.1% of body mass</b>, and you need <b>15 mg or less per day</b>. Tiny amounts, huge jobs. Sort them by type:</p>
+    <table>
+      <tr><th>Type</th><th>Elements</th></tr>
+      <tr><td><b>Metals</b></td><td>Cr, Co, Cu, Fe, Mn, Mo, Ni, Zn</td></tr>
+      <tr><td><b>Nonmetals</b></td><td>F, I, Se</td></tr>
+      <tr><td><b>Metalloids</b></td><td>As, B, Si</td></tr>
+    </table>
+    <div class="tip"><b>💡 What's a metalloid?</b> An "in-between" element that acts <b>part metal, part nonmetal</b>. The 3 here are <b>A.B.S.</b> → <b>A</b>rsenic, <b>B</b>oron, <b>S</b>ilicon. (Think "ABS brakes" — in between stop and go.)</div>
+    <div class="fun"><b>🎉 Fun fact:</b> <b>Arsenic</b> is a famous poison, yet your body uses a trace of it. The dose makes the poison — a rule that runs through all of pharmacology.</div>
+  </div>
+
+  <div class="card">
+    <h3>7. What the Trace Elements Actually Do</h3>
+    <table>
+      <tr><th>Element</th><th>Job</th></tr>
+      <tr><td><span class="sym">Fe</span> Iron</td><td>In <b>hemoglobin</b> (carries O₂ in red blood cells) and <b>myoglobin</b> (stores O₂ in muscle)</td></tr>
+      <tr><td><span class="sym">Zn</span> Zinc</td><td>In <b>enzymes</b> of the liver and kidneys</td></tr>
+      <tr><td><span class="sym">I</span> Iodine</td><td>Needed for <b>thyroid</b> function</td></tr>
+    </table>
+    <div class="nurse"><b>🩺 Nursing tie-in (this is gold):</b>
+      <ul>
+        <li><b>Low iron → anemia.</b> Less hemoglobin = less oxygen delivery = fatigue, pale skin, shortness of breath. You'll see this constantly.</li>
+        <li><b>Low iodine → thyroid problems</b> (goiter, hypothyroidism). It's why table salt is "iodized."</li>
+        <li><b>Hemoglobin vs. myoglobin:</b> hemo = <b>highway</b> (carries O₂ in blood), myo = <b>muscle storage</b>. Easy to mix up on exams.</li>
+      </ul>
+    </div>
+    <div class="tip"><b>💡 The slide says "look up the rest on your phone."</b> Here are the high-yield ones professors test: <b>Cu</b> (copper) helps iron form hemoglobin; <b>Se</b> (selenium) is an antioxidant; <b>Cr</b> (chromium) helps insulin/blood sugar; <b>Co</b> (cobalt) is the center of vitamin B12; <b>F</b> (fluoride) hardens teeth.</div>
+  </div>
+
+  <div class="card">
+    <h3>8. Compounds &amp; Reading Chemical Formulas</h3>
+    <p>A <b>compound</b> is a pure substance made by <b>chemically combining 2 or more elements</b>. We describe them with <b>chemical formulas</b> built from element symbols.</p>
+    <h3 style="margin-top:14px">The 3 rules for counting atoms</h3>
+    <ul>
+      <li><b>Subscript = how many of the element right before it.</b> <span class="formula">H₂O</span> = 2 H, 1 O. (No number means 1.)</li>
+      <li><b>Parentheses ( ) group atoms, and the subscript outside multiplies everything inside.</b> <span class="formula">Mg(OH)₂</span> = 1 Mg, then (O,H)×2 = 2 O and 2 H.</li>
+      <li><b>Multiply, then add up each element.</b> <span class="formula">Mg₃(PO₄)₂</span> = 3 Mg, P: 1×2 = 2, O: 4×2 = 8.</li>
+    </ul>
+    <table>
+      <tr><th>Formula</th><th>Atom count</th></tr>
+      <tr><td class="formula">H₂O</td><td>2 H, 1 O</td></tr>
+      <tr><td class="formula">CO</td><td>1 C, 1 O (carbon monoxide)</td></tr>
+      <tr><td class="formula">CO₂</td><td>1 C, 2 O (carbon dioxide)</td></tr>
+      <tr><td class="formula">C₆H₁₂O₆</td><td>6 C, 12 H, 6 O (glucose!)</td></tr>
+      <tr><td class="formula">Na₃(PO₄)</td><td>3 Na, 1 P, 4 O</td></tr>
+      <tr><td class="formula">Mg(OH)₂</td><td>1 Mg, 2 O, 2 H</td></tr>
+      <tr><td class="formula">Mg₃(PO₄)₂</td><td>3 Mg, 2 P, 8 O</td></tr>
+    </table>
+    <div class="why"><b>The "why" behind the parentheses:</b> The (PO₄) group is a <b>phosphate</b> — a team of atoms that stays together. The ×2 means "I need <b>two whole phosphate teams</b>." That's why you multiply <i>both</i> the P and the O. Distribute it like math: 2 × (P₁O₄) = P₂O₈.</div>
+    <div class="nurse"><b>🩺 Nursing tie-in:</b> <b>C₆H₁₂O₆ is glucose</b> — blood sugar, the thing every diabetic patient and every IV "D5W" bag is about. <b>CO₂</b> is what you breathe out and a key part of blood pH. <b>CO</b> (carbon monoxide) binds hemoglobin 200× tighter than oxygen — that's why it's deadly. The difference between CO and CO₂ is literally one subscript.</div>
+    <div class="tip"><b>💡 Watch out:</b> A subscript only counts the atom <b>immediately</b> before it. In <span class="formula">CO₂</span> the 2 belongs to O only, not C. Slow down and read left to right.</div>
+  </div>
+
+  <div class="card" style="border-color:var(--acc2)">
+    <h3>⭐ The 60-Second Recap</h3>
+    <ul>
+      <li><b>Element</b> = can't be broken down; 118 total; 1–2 letter symbol (1st capital, 2nd lowercase).</li>
+      <li><b>96% of you = CHON</b> (Carbon, Hydrogen, Oxygen, Nitrogen). N is only in proteins + nucleic acids.</li>
+      <li><b>Major minerals</b> (≥100 mg/day): fluids = K, Na, Cl · muscle = Mg, S · bones/teeth = Ca, P.</li>
+      <li><b>Trace elements</b> (≤15 mg/day): Fe (hemoglobin/myoglobin), Zn (liver/kidney enzymes), I (thyroid).</li>
+      <li><b>Compound</b> = 2+ elements combined; subscript counts the atom before it; parentheses multiply everything inside.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= PROBLEM SETS ================= -->
+<section id="problems">
+  <h2>✏️ Problem Sets</h2>
+  <p class="lead">Work these on paper first, then click to reveal the answer. Don't peek too soon, struggling a little is how it sticks.</p>
+
+  <div class="card">
+    <h3>Set A — Symbols &amp; Names</h3>
+    <details><summary>1. Give the symbols for: sodium, potassium, iron, calcium, iodine.</summary><span class="answer">Na, K, Fe, Ca, I</span></details>
+    <details><summary>2. Name these elements: Au, Pb, Hg, Sn, Cu.</summary><span class="answer">Gold, Lead, Mercury, Tin, Copper</span></details>
+    <details><summary>3. A student writes "co" for cobalt and "CO" elsewhere. What's wrong, and what does CO actually mean?</summary><span class="answer">Cobalt must be written <b>Co</b> (capital C, lowercase o). <b>CO</b> = the compound carbon monoxide. Capitalization changes the meaning entirely.</span></details>
+    <details><summary>4. Which of these symbols come from Latin names? Fe, O, Na, Cl, Ag, K.</summary><span class="answer">Fe (ferrum), Na (natrium), Ag (argentum), K (kalium). O and Cl come from their English/Greek names.</span></details>
+  </div>
+
+  <div class="card">
+    <h3>Set B — Body Composition</h3>
+    <details><summary>5. Name the four "building block" elements and the percent of body mass they make up.</summary><span class="answer">Carbon, Hydrogen, Oxygen, Nitrogen (CHON) — about 96%.</span></details>
+    <details><summary>6. Which building-block element is found ONLY in proteins and nucleic acids (not in carbs or lipids)?</summary><span class="answer">Nitrogen (N).</span></details>
+    <details><summary>7. Classify each as MAJOR mineral or TRACE element: calcium, iron, sodium, iodine, phosphorus, zinc.</summary><span class="answer">Major: calcium, sodium, phosphorus. Trace: iron, iodine, zinc.</span></details>
+    <details><summary>8. Your daily need for a mineral is 250 mg. Major or trace? How do you know?</summary><span class="answer">Major — major minerals require at least 100 mg/day; trace elements require 15 mg or less.</span></details>
+    <details><summary>9. Match the mineral group to its location: (K, Na, Cl) / (Mg, S) / (Ca, P).</summary><span class="answer">K, Na, Cl → body fluids. Mg, S → proteins in muscles. Ca, P → teeth and bones.</span></details>
+  </div>
+
+  <div class="card">
+    <h3>Set C — Functions (the "why")</h3>
+    <details><summary>10. What does iron do, and what's the difference between hemoglobin and myoglobin?</summary><span class="answer">Iron is needed for both. <b>Hemoglobin</b> carries oxygen in red blood cells; <b>myoglobin</b> stores oxygen in muscle.</span></details>
+    <details><summary>11. A patient has low iodine. Which organ/system is affected?</summary><span class="answer">The thyroid — iodine is needed for thyroid function.</span></details>
+    <details><summary>12. Why does low iron cause fatigue and shortness of breath? (Reason it out.)</summary><span class="answer">Less iron → less hemoglobin → blood carries less oxygen → tissues get less O₂ → fatigue and breathlessness (anemia).</span></details>
+  </div>
+
+  <div class="card">
+    <h3>Set D — Counting Atoms in Formulas</h3>
+    <details><summary>13. How many of each atom in CO₂?</summary><span class="answer">1 carbon, 2 oxygen.</span></details>
+    <details><summary>14. How many of each atom in C₆H₁₂O₆ (glucose)?</summary><span class="answer">6 carbon, 12 hydrogen, 6 oxygen.</span></details>
+    <details><summary>15. How many of each atom in Mg(OH)₂?</summary><span class="answer">1 magnesium, 2 oxygen, 2 hydrogen.</span></details>
+    <details><summary>16. How many of each atom in Na₃(PO₄)?</summary><span class="answer">3 sodium, 1 phosphorus, 4 oxygen.</span></details>
+    <details><summary>17. ⭐ Challenge: How many of each atom in Mg₃(PO₄)₂? Show the multiplication.</summary><span class="answer">3 Mg; phosphorus 1×2 = 2 P; oxygen 4×2 = 8 O. → 3 Mg, 2 P, 8 O.</span></details>
+    <details><summary>18. ⭐ Challenge: How many TOTAL atoms are in C₆H₁₂O₆?</summary><span class="answer">6 + 12 + 6 = 24 atoms.</span></details>
+    <details><summary>19. ⭐ Challenge: Write the atom counts for Ca₃(PO₄)₂ (calcium phosphate — the mineral in your bones!).</summary><span class="answer">3 calcium; P: 1×2 = 2; O: 4×2 = 8. → 3 Ca, 2 P, 8 O.</span></details>
+  </div>
+</section>
+
+<!-- ================= FLASHCARDS ================= -->
+<section id="flash">
+  <h2>🃏 Flashcards</h2>
+  <p class="lead">Click the card to flip. Pick a deck, shuffle, and rate yourself. The cards include the "why" and nursing notes where they help.</p>
+  <div class="fc-bar">
+    <select id="deckSel">
+      <option value="symbols">Deck: Element Symbols (47)</option>
+      <option value="concepts">Deck: Concepts &amp; "Why"</option>
+      <option value="all">Deck: Everything</option>
+    </select>
+    <button class="btn" id="shuffleBtn">🔀 Shuffle</button>
+    <button class="btn" id="prevBtn">◀ Prev</button>
+    <button class="btn" id="nextBtn">Next ▶</button>
+  </div>
+  <div class="flash" id="flash">
+    <div class="flash-inner">
+      <div class="face front"><div class="big" id="fcFront">H</div><div class="lbl" id="fcFrontLbl">symbol</div></div>
+      <div class="face back"><div class="detail" id="fcBack">Hydrogen</div><div class="extra" id="fcExtra"></div></div>
+    </div>
+  </div>
+  <div class="counter" id="fcCounter">Card 1 of 47 · click to flip</div>
+  <div class="rate">
+    <button class="btn" id="gotIt">✅ Got it</button>
+    <button class="btn" id="review">🔁 Review again</button>
+  </div>
+</section>
+
+<!-- ================= SYMBOL MATCH ================= -->
+<section id="match">
+  <h2>🎯 Symbol Match</h2>
+  <p class="lead">Tap a <b>symbol</b>, then tap its matching <b>name</b>. Clear the board as fast as you can!</p>
+  <div class="stat">
+    <span>⏱️ Time: <b id="mTime">0.0s</b></span>
+    <span>✅ Matched: <b id="mMatched">0</b>/6</span>
+    <span>❌ Misses: <b id="mMiss">0</b></span>
+    <span>🏆 Best: <b id="mBest">—</b></span>
+  </div>
+  <button class="btn primary" id="mNew">🔄 New Board</button>
+  <div class="grid" id="mGrid"></div>
+  <div class="feedback" id="mFeed"></div>
+</section>
+
+<!-- ================= FORMULA DETECTIVE ================= -->
+<section id="formula">
+  <h2>🔬 Formula Detective</h2>
+  <p class="lead">Read the formula and type how many of each atom. This is the exact skill from slide 9 — and it shows up on every quiz.</p>
+  <div class="stat">
+    <span>✅ Correct: <b id="fScore">0</b></span>
+    <span>🔥 Streak: <b id="fStreak">0</b></span>
+  </div>
+  <div class="card">
+    <div class="big-formula" id="fFormula">H<sub>2</sub>O</div>
+    <div id="fInputs"></div>
+    <div style="text-align:center;margin-top:12px">
+      <button class="btn primary" id="fCheck">Check</button>
+      <button class="btn" id="fNext" style="display:none">Next ▶</button>
+    </div>
+    <div class="feedback" id="fFeed"></div>
+  </div>
+</section>
+
+<!-- ================= WHY QUIZ ================= -->
+<section id="quiz">
+  <h2>🧠 Why Quiz</h2>
+  <p class="lead">Multiple choice on the concepts and nursing connections — the stuff that earns the points memorizing alone won't.</p>
+  <div class="stat">
+    <span>Question <b id="qNum">1</b>/<b id="qTotal">0</b></span>
+    <span>✅ Score: <b id="qScore">0</b></span>
+  </div>
+  <div class="progress"><i id="qBar"></i></div>
+  <div class="card">
+    <div class="qbox" id="qText"></div>
+    <div class="opts" id="qOpts"></div>
+    <div class="feedback" id="qFeed"></div>
+    <div style="text-align:center"><button class="btn primary" id="qNext" style="display:none">Next ▶</button></div>
+  </div>
+  <div class="card" id="qDone" style="display:none;text-align:center">
+    <div class="confetti">🎉</div>
+    <div id="qFinal" style="font-size:20px;font-weight:700"></div>
+    <button class="btn primary" id="qRestart" style="margin-top:12px">Try Again</button>
+  </div>
+</section>
+
+</main>
+<footer>Made for nursing chemistry · Elements &amp; Compounds · Works offline, no internet needed 💙</footer>
+
+<script>
+/* ---------- DATA ---------- */
+const ELEMENTS = [
+  ["H","Hydrogen"],["He","Helium"],["Li","Lithium"],["Be","Beryllium"],["B","Boron"],
+  ["C","Carbon"],["N","Nitrogen"],["O","Oxygen"],["F","Fluorine"],["Ne","Neon"],
+  ["Na","Sodium"],["Mg","Magnesium"],["Al","Aluminum"],["Si","Silicon"],["P","Phosphorus"],
+  ["S","Sulfur"],["Cl","Chlorine"],["Ar","Argon"],["K","Potassium"],["Ca","Calcium"],
+  ["Sc","Scandium"],["Ti","Titanium"],["V","Vanadium"],["Cr","Chromium"],["Mn","Manganese"],
+  ["Fe","Iron"],["Co","Cobalt"],["Ni","Nickel"],["Cu","Copper"],["Zn","Zinc"],
+  ["Ga","Gallium"],["Ge","Germanium"],["As","Arsenic"],["Se","Selenium"],["Br","Bromine"],
+  ["Kr","Krypton"],["Rb","Rubidium"],["Sr","Strontium"],["Y","Yttrium"],["Zr","Zirconium"],
+  ["Ag","Silver"],["Au","Gold"],["Hg","Mercury"],["Pb","Lead"],["Sb","Antimony"],["Sn","Tin"],["I","Iodine"]
+];
+const ELEM_NOTE = {
+  "Na":"Latin: natrium. Key electrolyte in body fluids.",
+  "K":"Latin: kalium. Low K (hypokalemia) is dangerous for the heart.",
+  "Fe":"Latin: ferrum. In hemoglobin & myoglobin — low iron = anemia.",
+  "Cu":"Latin: cuprum. Helps iron build hemoglobin.",
+  "Ag":"Latin: argentum.",
+  "Au":"Latin: aurum.",
+  "Hg":"Latin: hydrargyrum ('liquid silver').",
+  "Pb":"Latin: plumbum — root of 'plumbing'.",
+  "Sb":"Latin: stibium.",
+  "Sn":"Latin: stannum.",
+  "I":"Iodine — needed for thyroid function; why salt is iodized.",
+  "Ca":"Major mineral — bones, teeth, muscle contraction, clotting.",
+  "Zn":"Trace element — in liver & kidney enzymes.",
+  "Cl":"Major mineral — electrolyte in body fluids.",
+  "C":"A 'CHON' building block — backbone of all biomolecules.",
+  "H":"A 'CHON' building block — part of water.",
+  "O":"A 'CHON' building block — most abundant element by body mass.",
+  "N":"A 'CHON' building block — only in proteins & nucleic acids."
+};
+const CONCEPTS = [
+  ["What is an element?","A pure substance that cannot be broken down into simpler substances by a chemical reaction.","118 known: ~90 natural, ~28 artificial."],
+  ["The capitalization rule for symbols","First letter CAPITAL, second letter lowercase.","Co = cobalt (element). CO = carbon monoxide (compound)!"],
+  ["The 4 building-block elements (CHON)","Carbon, Hydrogen, Oxygen, Nitrogen.","96% of body mass. Mnemonic: 'CHON' = 'Shawn'."],
+  ["Which building block is ONLY in proteins & nucleic acids?","Nitrogen (N).","Why nurses track BUN — Blood Urea Nitrogen — for kidneys."],
+  ["Most abundant substance in the body?","Water (H₂O).","Made of oxygen + hydrogen."],
+  ["The 4 biological molecules","Carbohydrates, Lipids, Proteins, Nucleic acids.","All contain C, H, O. Proteins & nucleic acids also have N."],
+  ["Major mineral daily requirement","At least 100 mg per day.","Make up 0.1–2% of body mass."],
+  ["Trace element daily requirement","15 mg or less per day.","Each is under 0.1% of body mass."],
+  ["Major minerals in body FLUIDS","Potassium (K), Sodium (Na), Chlorine (Cl).","Your electrolytes!"],
+  ["Major minerals in MUSCLE proteins","Magnesium (Mg), Sulfur (S).",""],
+  ["Major minerals in TEETH & BONES","Calcium (Ca), Phosphorus (P).","P is also in nucleic acids."],
+  ["What does IRON do?","It's in hemoglobin (carries O₂ in red blood cells) and myoglobin (stores O₂ in muscle).","Low iron → anemia."],
+  ["Hemoglobin vs. myoglobin","Hemoglobin CARRIES oxygen in blood; myoglobin STORES oxygen in muscle.","Hemo = highway, Myo = muscle storage."],
+  ["What does IODINE do?","Needed for thyroid function.","Why table salt is iodized."],
+  ["What does ZINC do?","Found in enzymes of the liver and kidneys.",""],
+  ["The 3 metalloid trace elements","Arsenic (As), Boron (B), Silicon (Si).","'ABS' — part metal, part nonmetal."],
+  ["What is a compound?","A pure substance made by chemically combining 2 or more elements.","Described by chemical formulas."],
+  ["What does a subscript mean?","The number of the atom immediately before it.","H₂O = 2 hydrogen, 1 oxygen. No number = 1."],
+  ["What do parentheses do in a formula?","The subscript outside multiplies everything inside.","Mg(OH)₂ = 1 Mg, 2 O, 2 H."],
+  ["What is C₆H₁₂O₆?","Glucose — blood sugar.","6 C, 12 H, 6 O. The 'D5W' IV bag and every diabetic chart."]
+];
+
+/* ---------- TAB NAV ---------- */
+const nav=document.getElementById('nav');
+nav.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  const t=b.dataset.t;
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('active',s.id===t));
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(t==='match'&&!mGrid.children.length) newMatch();
+  if(t==='formula'&&!fLoaded) {fLoaded=true; nextFormula();}
+  if(t==='quiz'&&!qLoaded){qLoaded=true; startQuiz();}
+});
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+/* ---------- FLASHCARDS ---------- */
+let fcCards=[], fcIdx=0, fcReview=[];
+function buildDeck(){
+  const d=deckSel.value; let cards=[];
+  if(d==='symbols'||d==='all') cards=cards.concat(ELEMENTS.map(([s,n])=>({front:s,frontLbl:'symbol',back:n,extra:ELEM_NOTE[s]||''})));
+  if(d==='concepts'||d==='all') cards=cards.concat(CONCEPTS.map(([q,a,e])=>({front:q,frontLbl:'concept',back:a,extra:e||''})));
+  fcCards=shuffle(cards); fcIdx=0; fcReview=[]; renderCard();
+}
+function renderCard(){
+  flash.classList.remove('flipped');
+  setTimeout(()=>{
+    const c=fcCards[fcIdx];
+    fcFront.textContent=c.front;
+    fcFront.style.fontSize = c.frontLbl==='symbol'?'64px':'24px';
+    fcFrontLbl.textContent=c.frontLbl;
+    fcBack.textContent=c.back; fcExtra.textContent=c.extra;
+    fcCounter.textContent=`Card ${fcIdx+1} of ${fcCards.length} · click to flip`;
+  },140);
+}
+flash.addEventListener('click',()=>flash.classList.toggle('flipped'));
+deckSel.onchange=buildDeck;
+shuffleBtn.onclick=buildDeck;
+nextBtn.onclick=()=>{fcIdx=(fcIdx+1)%fcCards.length;renderCard();};
+prevBtn.onclick=()=>{fcIdx=(fcIdx-1+fcCards.length)%fcCards.length;renderCard();};
+gotIt.onclick=()=>{fcCards.splice(fcIdx,1);if(!fcCards.length){buildDeck();return;}if(fcIdx>=fcCards.length)fcIdx=0;renderCard();};
+review.onclick=()=>{const c=fcCards.splice(fcIdx,1)[0];fcCards.push(c);if(fcIdx>=fcCards.length)fcIdx=0;renderCard();};
+buildDeck();
+
+/* ---------- SYMBOL MATCH ---------- */
+let mSel=null,mMatched=0,mMiss=0,mTimer=null,mStart=0,mBest=localStorage.getItem('mBest');
+if(mBest) document.getElementById('mBest').textContent=parseFloat(mBest).toFixed(1)+'s';
+const mGrid=document.getElementById('mGrid');
+function newMatch(){
+  clearInterval(mTimer); mSel=null; mMatched=0; mMiss=0;
+  document.getElementById('mMatched').textContent='0';
+  document.getElementById('mMiss').textContent='0';
+  document.getElementById('mFeed').textContent='';
+  const pick=shuffle(ELEMENTS).slice(0,6);
+  let tiles=[];
+  pick.forEach(([s,n],i)=>{tiles.push({k:i,txt:s,type:'sym'});tiles.push({k:i,txt:n,type:'name'});});
+  tiles=shuffle(tiles);
+  mGrid.innerHTML='';
+  tiles.forEach(t=>{
+    const el=document.createElement('div');
+    el.className='tile'; el.textContent=t.txt; el.dataset.k=t.k;
+    el.onclick=()=>clickTile(el,t.k);
+    mGrid.appendChild(el);
+  });
+  mStart=Date.now();
+  mTimer=setInterval(()=>{document.getElementById('mTime').textContent=((Date.now()-mStart)/1000).toFixed(1)+'s';},100);
+}
+function clickTile(el,k){
+  if(el.classList.contains('matched'))return;
+  if(!mSel){mSel={el,k};el.classList.add('sel');return;}
+  if(mSel.el===el){el.classList.remove('sel');mSel=null;return;}
+  if(mSel.k===k){
+    el.classList.add('matched');mSel.el.classList.add('matched');mSel=null;mMatched++;
+    document.getElementById('mMatched').textContent=mMatched;
+    if(mMatched===6){
+      clearInterval(mTimer);
+      const t=(Date.now()-mStart)/1000;
+      let msg=`🎉 Cleared in ${t.toFixed(1)}s with ${mMiss} misses!`;
+      if(!mBest||t<parseFloat(mBest)){mBest=t;localStorage.setItem('mBest',t);document.getElementById('mBest').textContent=t.toFixed(1)+'s';msg+=' 🏆 New best!';}
+      document.getElementById('mFeed').style.color='var(--good)';
+      document.getElementById('mFeed').textContent=msg;
+    }
+  } else {
+    el.classList.add('wrong');mSel.el.classList.remove('sel');
+    const bad=el;setTimeout(()=>bad.classList.remove('wrong'),350);
+    mMiss++;document.getElementById('mMiss').textContent=mMiss;mSel=null;
+  }
+}
+document.getElementById('mNew').onclick=newMatch;
+
+/* ---------- FORMULA DETECTIVE ---------- */
+const FORMULAS=[
+  {d:'H<sub>2</sub>O',atoms:{H:2,O:1}},
+  {d:'CO',atoms:{C:1,O:1}},
+  {d:'CO<sub>2</sub>',atoms:{C:1,O:2}},
+  {d:'C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>',atoms:{C:6,H:12,O:6}},
+  {d:'Na<sub>3</sub>(PO<sub>4</sub>)',atoms:{Na:3,P:1,O:4}},
+  {d:'Mg(OH)<sub>2</sub>',atoms:{Mg:1,O:2,H:2}},
+  {d:'Mg<sub>3</sub>(PO<sub>4</sub>)<sub>2</sub>',atoms:{Mg:3,P:2,O:8}},
+  {d:'NaCl',atoms:{Na:1,Cl:1}},
+  {d:'CaCO<sub>3</sub>',atoms:{Ca:1,C:1,O:3}},
+  {d:'Ca<sub>3</sub>(PO<sub>4</sub>)<sub>2</sub>',atoms:{Ca:3,P:2,O:8}},
+  {d:'NaHCO<sub>3</sub>',atoms:{Na:1,H:1,C:1,O:3}},
+  {d:'KCl',atoms:{K:1,Cl:1}}
+];
+const NAMES={H:'Hydrogen',O:'Oxygen',C:'Carbon',Na:'Sodium',P:'Phosphorus',Mg:'Magnesium',Cl:'Chlorine',Ca:'Calcium',K:'Potassium'};
+let fLoaded=false,fScore=0,fStreak=0,fCur=null;
+function nextFormula(){
+  fCur=FORMULAS[Math.random()*FORMULAS.length|0];
+  document.getElementById('fFormula').innerHTML=fCur.d;
+  const box=document.getElementById('fInputs'); box.innerHTML='';
+  Object.keys(fCur.atoms).forEach(sym=>{
+    const row=document.createElement('div'); row.className='atomrow';
+    row.innerHTML=`<label><b>${sym}</b> (${NAMES[sym]||sym}):</label>`;
+    const inp=document.createElement('input'); inp.type='number'; inp.min=0; inp.dataset.sym=sym;
+    row.appendChild(inp); box.appendChild(row);
+  });
+  document.getElementById('fFeed').textContent='';
+  document.getElementById('fCheck').style.display='';
+  document.getElementById('fNext').style.display='none';
+}
+document.getElementById('fCheck').onclick=()=>{
+  let ok=true;
+  document.querySelectorAll('#fInputs input').forEach(inp=>{
+    const want=fCur.atoms[inp.dataset.sym];
+    if(parseInt(inp.value)!==want){ok=false;inp.style.borderColor='var(--bad)';}
+    else inp.style.borderColor='var(--good)';
+  });
+  const fb=document.getElementById('fFeed');
+  if(ok){
+    fScore++;fStreak++;fb.style.color='var(--good)';
+    fb.textContent=fStreak>=3?`✅ Correct! 🔥 ${fStreak} in a row!`:'✅ Correct!';
+    document.getElementById('fScore').textContent=fScore;
+    document.getElementById('fStreak').textContent=fStreak;
+    document.getElementById('fCheck').style.display='none';
+    document.getElementById('fNext').style.display='';
+  } else {
+    fStreak=0;document.getElementById('fStreak').textContent=0;
+    fb.style.color='var(--bad)';
+    const ans=Object.entries(fCur.atoms).map(([k,v])=>`${v} ${k}`).join(', ');
+    fb.textContent='❌ Not quite. Answer: '+ans+'. Remember: subscript counts the atom before it; parentheses multiply everything inside.';
+  }
+};
+document.getElementById('fNext').onclick=nextFormula;
+
+/* ---------- WHY QUIZ ---------- */
+const QUIZ=[
+  {q:"Which four elements make up about 96% of your body mass?",a:["Carbon, Hydrogen, Oxygen, Nitrogen","Calcium, Iron, Sodium, Potassium","Silicon, Aluminum, Iron, Oxygen","Carbon, Calcium, Chlorine, Copper"],c:0,why:"CHON — Carbon, Hydrogen, Oxygen, Nitrogen. Mnemonic: 'Shawn'."},
+  {q:"Iron is essential because it is found in...",a:["Hemoglobin and myoglobin","The thyroid gland","Teeth and bones","Stomach acid"],c:0,why:"Hemoglobin carries O₂ in blood; myoglobin stores O₂ in muscle. Low iron → anemia."},
+  {q:"A patient with low iodine will most likely have problems with which organ?",a:["Thyroid","Liver","Kidney","Pancreas"],c:0,why:"Iodine is required for thyroid function — that's why salt is iodized."},
+  {q:"How is the symbol for cobalt written, and why does it matter?",a:["Co — because CO means carbon monoxide","CO — capitals don't matter","co — all lowercase","Cb — to avoid confusion"],c:0,why:"First letter capital, second lowercase. Co (cobalt) vs CO (carbon monoxide, a compound)."},
+  {q:"Which mineral group is found in body fluids (your electrolytes)?",a:["Potassium, Sodium, Chlorine","Calcium, Phosphorus","Magnesium, Sulfur","Iron, Zinc, Iodine"],c:0,why:"K, Na, Cl live in body fluids — the electrolytes you'll monitor constantly in nursing."},
+  {q:"How many atoms of each element are in Mg(OH)₂?",a:["1 Mg, 2 O, 2 H","1 Mg, 1 O, 1 H","2 Mg, 2 O, 2 H","1 Mg, 2 O, 1 H"],c:0,why:"The subscript 2 outside the parentheses multiplies BOTH the O and the H."},
+  {q:"What's the difference between a MAJOR mineral and a TRACE element?",a:["Major needs ≥100 mg/day; trace needs ≤15 mg/day","Major is a metal; trace is a nonmetal","Major is natural; trace is artificial","There is no difference"],c:0,why:"It's about daily amount: major ≥100 mg, trace ≤15 mg per day."},
+  {q:"Nitrogen (N) is special among the building blocks because it is found in...",a:["Proteins and nucleic acids only","Water only","All four biomolecules equally","Bones and teeth"],c:0,why:"C, H, O are in all biomolecules; N is only in proteins and nucleic acids. (Why nurses watch BUN.)"},
+  {q:"C₆H₁₂O₆ is the formula for which important molecule?",a:["Glucose (blood sugar)","Water","Table salt","Carbon dioxide"],c:0,why:"Glucose: 6 carbon, 12 hydrogen, 6 oxygen. Central to diabetes care and IV fluids."},
+  {q:"An element is best defined as...",a:["A pure substance that can't be broken down chemically","A mix of two or more metals","Anything dissolved in water","A substance made of 2+ elements combined"],c:0,why:"Can't be broken into anything simpler by a chemical reaction. (2+ combined = a compound.)"},
+  {q:"Which set are the 3 metalloid trace elements?",a:["Arsenic, Boron, Silicon","Iron, Zinc, Copper","Fluorine, Iodine, Selenium","Sodium, Potassium, Calcium"],c:0,why:"Metalloids ('ABS') are part-metal, part-nonmetal: As, B, Si."},
+  {q:"Why is low iron a problem for oxygen delivery?",a:["Less iron → less hemoglobin → blood carries less oxygen","Iron is what you breathe in","Iron makes the thyroid release oxygen","Iron stores sugar for energy"],c:0,why:"Iron sits at the core of hemoglobin. Less of it = anemia = fatigue and shortness of breath."}
+];
+let qLoaded=false,qList=[],qIdx=0,qScore=0;
+function startQuiz(){
+  qList=shuffle(QUIZ); qIdx=0; qScore=0;
+  document.getElementById('qTotal').textContent=qList.length;
+  document.getElementById('qDone').style.display='none';
+  document.querySelector('#quiz .card').style.display='';
+  showQ();
+}
+function showQ(){
+  const item=qList[qIdx];
+  document.getElementById('qNum').textContent=qIdx+1;
+  document.getElementById('qScore').textContent=qScore;
+  document.getElementById('qBar').style.width=(qIdx/qList.length*100)+'%';
+  document.getElementById('qText').textContent=item.q;
+  document.getElementById('qFeed').textContent='';
+  document.getElementById('qNext').style.display='none';
+  const opts=document.getElementById('qOpts'); opts.innerHTML='';
+  const order=shuffle(item.a.map((t,i)=>({t,i})));
+  order.forEach(o=>{
+    const el=document.createElement('div'); el.className='opt'; el.textContent=o.t;
+    el.onclick=()=>answer(el,o.i===item.c,item);
+    opts.appendChild(el);
+  });
+}
+function answer(el,correct,item){
+  document.querySelectorAll('#qOpts .opt').forEach(o=>o.onclick=null);
+  const fb=document.getElementById('qFeed');
+  if(correct){el.classList.add('right');qScore++;fb.style.color='var(--good)';fb.textContent='✅ '+item.why;}
+  else{
+    el.classList.add('wrong');fb.style.color='var(--mut)';fb.textContent='💡 '+item.why;
+    document.querySelectorAll('#qOpts .opt').forEach(o=>{if(o.textContent===item.a[item.c])o.classList.add('right');});
+  }
+  document.getElementById('qScore').textContent=qScore;
+  document.getElementById('qNext').style.display='';
+}
+document.getElementById('qNext').onclick=()=>{
+  qIdx++;
+  if(qIdx>=qList.length){
+    document.querySelector('#quiz .card').style.display='none';
+    document.getElementById('qBar').style.width='100%';
+    document.getElementById('qDone').style.display='';
+    const pct=Math.round(qScore/qList.length*100);
+    let m=`You scored ${qScore}/${qList.length} (${pct}%)`;
+    m+= pct===100?' — perfect! 🌟':pct>=75?' — great work! 💪':pct>=50?' — solid, run it again to lock it in. 📚':' — keep going, review the lecture and retry. You got this! 💙';
+    document.getElementById('qFinal').textContent=m;
+  } else showQ();
+};
+document.getElementById('qRestart').onclick=startQuiz;
+</script>
+<script>
+/* Register offline service worker so the app works with no internet once installed. */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
