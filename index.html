@@ -92,7 +92,14 @@
   .face .detail{font-size:16px;margin-top:6px;color:var(--ink)}
   .face .extra{font-size:13px;color:var(--acc2);margin-top:12px;max-width:560px}
   .counter{color:var(--mut);font-size:13px;text-align:center;margin-top:6px}
-  .rate{display:flex;gap:8px;justify-content:center;margin-top:10px}
+  .rate{display:flex;gap:10px;justify-content:center;margin-top:12px}
+  .rate .btn{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:104px;padding:10px 14px;border-width:2px}
+  .rate .btn small{font-size:11px;color:var(--mut);font-weight:500}
+  .rate .again{border-color:#7f2a36}.rate .again:hover{border-color:var(--bad);background:rgba(239,68,68,.10)}
+  .rate .good{border-color:#1e5e8a}.rate .good:hover{border-color:var(--acc1);background:rgba(56,189,248,.10)}
+  .rate .easy{border-color:#1f6e52}.rate .easy:hover{border-color:var(--good);background:rgba(34,197,94,.10)}
+  .srs-badge{font-size:12px;background:rgba(56,189,248,.14);color:var(--acc1);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-weight:600;vertical-align:middle}
+  .tap-hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;opacity:.6}
 
   /* Game shells */
   .stat{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 4px;font-size:14px}
@@ -343,28 +350,40 @@
 
 <!-- ================= FLASHCARDS ================= -->
 <section id="flash">
-  <h2>🃏 Flashcards</h2>
-  <p class="lead">Click the card to flip. Pick a deck, shuffle, and rate yourself. The cards include the "why" and nursing notes where they help.</p>
+  <h2>🃏 Flashcards <span class="srs-badge">Anki-style spaced repetition</span></h2>
+  <p class="lead">Tap the card to flip, then rate how well you knew it. Cards you miss come back fast; cards you know come back later. Your progress saves on this device automatically.</p>
   <div class="fc-bar">
     <select id="deckSel">
       <option value="symbols">Deck: Element Symbols (47)</option>
       <option value="concepts">Deck: Concepts &amp; "Why"</option>
       <option value="all">Deck: Everything</option>
     </select>
-    <button class="btn" id="shuffleBtn">🔀 Shuffle</button>
-    <button class="btn" id="prevBtn">◀ Prev</button>
-    <button class="btn" id="nextBtn">Next ▶</button>
+    <button class="btn" id="skipBtn">Skip ▶</button>
+    <button class="btn" id="practiceBtn">♾️ Practice all</button>
+    <button class="btn" id="resetBtn">↺ Reset</button>
   </div>
-  <div class="flash" id="flash">
+  <div class="stat">
+    <span>🆕 New: <b id="sNew">0</b></span>
+    <span>📒 Learning: <b id="sLearn">0</b></span>
+    <span>⏰ Due: <b id="sDue">0</b></span>
+    <span>✅ Mastered: <b id="sMaster">0</b></span>
+  </div>
+  <div class="flash" id="fcard">
     <div class="flash-inner">
-      <div class="face front"><div class="big" id="fcFront">H</div><div class="lbl" id="fcFrontLbl">symbol</div></div>
-      <div class="face back"><div class="detail" id="fcBack">Hydrogen</div><div class="extra" id="fcExtra"></div></div>
+      <div class="face front"><div class="big" id="fcFront">H</div><div class="lbl" id="fcFrontLbl">symbol</div><div class="tap-hint">tap to flip</div></div>
+      <div class="face back"><div class="detail" id="fcBack">Hydrogen</div><div class="extra" id="fcExtra"></div><div class="tap-hint">tap to flip back</div></div>
     </div>
   </div>
-  <div class="counter" id="fcCounter">Card 1 of 47 · click to flip</div>
-  <div class="rate">
-    <button class="btn" id="gotIt">✅ Got it</button>
-    <button class="btn" id="review">🔁 Review again</button>
+  <div class="counter" id="fcCounter">Card 1 of 47</div>
+  <div class="rate" id="rateRow">
+    <button class="btn again" id="gAgain">❌ Again<small>see it again soon</small></button>
+    <button class="btn good" id="gGood">🙂 Good<small>got it</small></button>
+    <button class="btn easy" id="gEasy">😎 Easy<small>too easy</small></button>
+  </div>
+  <div class="card" id="fcDone" style="display:none;text-align:center">
+    <div class="confetti">🎉</div>
+    <div id="fcDoneMsg" style="font-size:18px;font-weight:700"></div>
+    <button class="btn primary" id="fcPracticeAll" style="margin-top:12px">♾️ Practice all cards anyway</button>
   </div>
 </section>
 
@@ -396,7 +415,8 @@
     <div id="fInputs"></div>
     <div style="text-align:center;margin-top:12px">
       <button class="btn primary" id="fCheck">Check</button>
-      <button class="btn" id="fNext" style="display:none">Next ▶</button>
+      <button class="btn" id="fRetry" style="display:none">↺ Try Again</button>
+      <button class="btn primary" id="fNext" style="display:none">Next ▶</button>
     </div>
     <div class="feedback" id="fFeed"></div>
   </div>
@@ -420,7 +440,10 @@
   <div class="card" id="qDone" style="display:none;text-align:center">
     <div class="confetti">🎉</div>
     <div id="qFinal" style="font-size:20px;font-weight:700"></div>
-    <button class="btn primary" id="qRestart" style="margin-top:12px">Try Again</button>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn primary" id="qReview" style="display:none">🔁 Review what you missed</button>
+      <button class="btn primary" id="qRestart">Start over</button>
+    </div>
   </div>
 </section>
 
@@ -498,33 +521,108 @@ nav.addEventListener('click',e=>{
 });
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
 
-/* ---------- FLASHCARDS ---------- */
-let fcCards=[], fcIdx=0, fcReview=[];
-function buildDeck(){
+/* ---------- FLASHCARDS (Anki-style spaced repetition) ---------- */
+const SRS_KEY='nc_srs_v1';
+const DAY=86400000;
+// Leitner boxes -> next interval. Box grows as you get a card right.
+const BOX_INTERVAL={1:0, 2:1*DAY, 3:3*DAY, 4:7*DAY, 5:21*DAY};
+let srs = (()=>{ try{return JSON.parse(localStorage.getItem(SRS_KEY))||{};}catch(e){return {};} })();
+function saveSRS(){ try{localStorage.setItem(SRS_KEY,JSON.stringify(srs));}catch(e){} }
+
+const fcard=document.getElementById('fcard');
+let fcSession=[], fcPos=0, fcPractice=false;
+
+function allCards(){
   const d=deckSel.value; let cards=[];
-  if(d==='symbols'||d==='all') cards=cards.concat(ELEMENTS.map(([s,n])=>({front:s,frontLbl:'symbol',back:n,extra:ELEM_NOTE[s]||''})));
-  if(d==='concepts'||d==='all') cards=cards.concat(CONCEPTS.map(([q,a,e])=>({front:q,frontLbl:'concept',back:a,extra:e||''})));
-  fcCards=shuffle(cards); fcIdx=0; fcReview=[]; renderCard();
+  if(d==='symbols'||d==='all') cards=cards.concat(ELEMENTS.map(([s,n])=>({id:'sym:'+s,front:s,frontLbl:'symbol',back:n,extra:ELEM_NOTE[s]||''})));
+  if(d==='concepts'||d==='all') cards=cards.concat(CONCEPTS.map(([q,a,e],i)=>({id:'con:'+i,front:q,frontLbl:'concept',back:a,extra:e||''})));
+  return cards;
+}
+function updateStats(){
+  const cards=allCards(); const t=Date.now();
+  let nw=0,learn=0,due=0,master=0;
+  cards.forEach(c=>{const st=srs[c.id];
+    if(!st||!st.box){nw++;}
+    else { if(st.box>=5)master++; else learn++; if(st.due<=t)due++; }
+  });
+  sNew.textContent=nw; sLearn.textContent=learn; sDue.textContent=due; sMaster.textContent=master;
+}
+function startReview(){
+  fcPractice=false;
+  const cards=allCards(), t=Date.now();
+  const dueArr=[], fresh=[], future=[];
+  cards.forEach(c=>{const st=srs[c.id];
+    if(!st||!st.box) fresh.push(c);
+    else if(st.due<=t) dueArr.push(c);
+    else future.push(c);
+  });
+  dueArr.sort((a,b)=>srs[a.id].due-srs[b.id].due);
+  // Session = everything due + new cards. (Future cards wait until they're due.)
+  fcSession = dueArr.concat(shuffle(fresh));
+  fcPos=0; updateStats();
+  if(fcSession.length){ showRate(true); renderCard(); }
+  else renderDone();
+}
+function startPractice(){
+  fcPractice=true;
+  fcSession=shuffle(allCards()); fcPos=0; updateStats();
+  showRate(true); renderCard();
+}
+function showRate(on){
+  rateRow.style.display = on?'flex':'none';
+  fcDone.style.display = on?'none':'block';
+  fcard.style.display = on?'block':'none';
+  fcCounter.style.display = on?'block':'none';
 }
 function renderCard(){
-  flash.classList.remove('flipped');
+  fcard.classList.remove('flipped');
   setTimeout(()=>{
-    const c=fcCards[fcIdx];
+    const c=fcSession[fcPos];
     fcFront.textContent=c.front;
-    fcFront.style.fontSize = c.frontLbl==='symbol'?'64px':'24px';
+    fcFront.style.fontSize = c.frontLbl==='symbol'?'64px':'22px';
     fcFrontLbl.textContent=c.frontLbl;
     fcBack.textContent=c.back; fcExtra.textContent=c.extra;
-    fcCounter.textContent=`Card ${fcIdx+1} of ${fcCards.length} · click to flip`;
+    const left=fcSession.length-fcPos;
+    fcCounter.textContent = fcPractice ? `Card ${fcPos+1} of ${fcSession.length}` : `${left} card${left===1?'':'s'} left in this review`;
   },140);
 }
-flash.addEventListener('click',()=>flash.classList.toggle('flipped'));
-deckSel.onchange=buildDeck;
-shuffleBtn.onclick=buildDeck;
-nextBtn.onclick=()=>{fcIdx=(fcIdx+1)%fcCards.length;renderCard();};
-prevBtn.onclick=()=>{fcIdx=(fcIdx-1+fcCards.length)%fcCards.length;renderCard();};
-gotIt.onclick=()=>{fcCards.splice(fcIdx,1);if(!fcCards.length){buildDeck();return;}if(fcIdx>=fcCards.length)fcIdx=0;renderCard();};
-review.onclick=()=>{const c=fcCards.splice(fcIdx,1)[0];fcCards.push(c);if(fcIdx>=fcCards.length)fcIdx=0;renderCard();};
-buildDeck();
+function renderDone(){
+  showRate(false);
+  const cards=allCards(), t=Date.now();
+  const masteredAll = cards.every(c=>srs[c.id]&&srs[c.id].box>=5);
+  fcDoneMsg.innerHTML = masteredAll
+    ? "You've mastered every card in this deck! 🌟 Come back another day and they'll cycle through once more to keep them fresh."
+    : "All caught up for now! 🎉 You've reviewed everything that was due. New cards and reviews will unlock as time passes (that's the spaced-repetition magic). Want more reps now? Hit Practice all.";
+}
+function grade(g){
+  const c=fcSession[fcPos];
+  if(!fcPractice || true){ // record progress in both modes
+    let st=srs[c.id]||{box:0,due:0,reps:0};
+    if(g==='again'){ st.box=1; st.due=Date.now()+60*1000; }
+    else if(g==='good'){ st.box=Math.min(5,(st.box||0)+1); st.due=Date.now()+BOX_INTERVAL[st.box]; }
+    else if(g==='easy'){ st.box=Math.min(5,(st.box||0)+2); st.due=Date.now()+BOX_INTERVAL[st.box]; }
+    st.reps=(st.reps||0)+1; srs[c.id]=st; saveSRS();
+  }
+  // "Again" brings the card back within this same session
+  if(g==='again'){ const at=Math.min(fcSession.length, fcPos+3); fcSession.splice(at,0,c); }
+  fcPos++; updateStats();
+  if(fcPos>=fcSession.length){ fcPractice?startPractice():renderDone(); }
+  else renderCard();
+}
+fcard.addEventListener('click',()=>fcard.classList.toggle('flipped'));
+gAgain.onclick=()=>grade('again');
+gGood.onclick =()=>grade('good');
+gEasy.onclick =()=>grade('easy');
+skipBtn.onclick=()=>{ fcPos++; if(fcPos>=fcSession.length){fcPractice?startPractice():renderDone();} else renderCard(); };
+practiceBtn.onclick=startPractice;
+fcPracticeAll.onclick=startPractice;
+deckSel.onchange=startReview;
+resetBtn.onclick=()=>{
+  if(confirm('Reset spaced-repetition progress for this deck? This clears your card history so everything starts fresh.')){
+    allCards().forEach(c=>{ delete srs[c.id]; }); saveSRS(); startReview();
+  }
+};
+startReview();
 
 /* ---------- SYMBOL MATCH ---------- */
 let mSel=null,mMatched=0,mMiss=0,mTimer=null,mStart=0,mBest=localStorage.getItem('mBest');
@@ -589,43 +687,61 @@ const FORMULAS=[
 ];
 const NAMES={H:'Hydrogen',O:'Oxygen',C:'Carbon',Na:'Sodium',P:'Phosphorus',Mg:'Magnesium',Cl:'Chlorine',Ca:'Calcium',K:'Potassium'};
 let fLoaded=false,fScore=0,fStreak=0,fCur=null;
-function nextFormula(){
-  fCur=FORMULAS[Math.random()*FORMULAS.length|0];
+let fTurn=0, fMissQueue=[];           // spaced repetition: missed formulas resurface soon
+const fCheck=document.getElementById('fCheck');
+const fRetry=document.getElementById('fRetry');
+const fNext=document.getElementById('fNext');
+function pickFormula(){
+  // bring back a missed formula once it's "due", otherwise a fresh random one (not the same twice)
+  for(let i=0;i<fMissQueue.length;i++){
+    if(fMissQueue[i].due<=fTurn){ return fMissQueue.splice(i,1)[0].f; }
+  }
+  let f; do { f=FORMULAS[Math.random()*FORMULAS.length|0]; } while(f===fCur && FORMULAS.length>1);
+  return f;
+}
+function renderFormula(){
   document.getElementById('fFormula').innerHTML=fCur.d;
   const box=document.getElementById('fInputs'); box.innerHTML='';
   Object.keys(fCur.atoms).forEach(sym=>{
     const row=document.createElement('div'); row.className='atomrow';
     row.innerHTML=`<label><b>${sym}</b> (${NAMES[sym]||sym}):</label>`;
-    const inp=document.createElement('input'); inp.type='number'; inp.min=0; inp.dataset.sym=sym;
+    const inp=document.createElement('input'); inp.type='number'; inp.min=0; inp.inputMode='numeric'; inp.dataset.sym=sym;
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') fCheck.click(); });
     row.appendChild(inp); box.appendChild(row);
   });
   document.getElementById('fFeed').textContent='';
-  document.getElementById('fCheck').style.display='';
-  document.getElementById('fNext').style.display='none';
+  fCheck.style.display=''; fRetry.style.display='none'; fNext.style.display='none';
 }
-document.getElementById('fCheck').onclick=()=>{
-  let ok=true;
+function nextFormula(){ fTurn++; fCur=pickFormula(); renderFormula(); }
+function clearInputs(){ document.querySelectorAll('#fInputs input').forEach(inp=>{inp.value='';inp.style.borderColor='';}); document.getElementById('fFeed').textContent=''; fCheck.style.display=''; fRetry.style.display='none'; fNext.style.display='none'; const first=document.querySelector('#fInputs input'); if(first) first.focus(); }
+fCheck.onclick=()=>{
+  let ok=true, answered=false;
   document.querySelectorAll('#fInputs input').forEach(inp=>{
+    if(inp.value!=='') answered=true;
     const want=fCur.atoms[inp.dataset.sym];
     if(parseInt(inp.value)!==want){ok=false;inp.style.borderColor='var(--bad)';}
     else inp.style.borderColor='var(--good)';
   });
   const fb=document.getElementById('fFeed');
+  if(!answered){ fb.style.color='var(--mut)'; fb.textContent='✏️ Type a number for each atom first.'; return; }
   if(ok){
     fScore++;fStreak++;fb.style.color='var(--good)';
     fb.textContent=fStreak>=3?`✅ Correct! 🔥 ${fStreak} in a row!`:'✅ Correct!';
     document.getElementById('fScore').textContent=fScore;
     document.getElementById('fStreak').textContent=fStreak;
-    document.getElementById('fCheck').style.display='none';
-    document.getElementById('fNext').style.display='';
+    fCheck.style.display='none'; fRetry.style.display='none'; fNext.style.display='';
+    fNext.focus();
   } else {
     fStreak=0;document.getElementById('fStreak').textContent=0;
     fb.style.color='var(--bad)';
     const ans=Object.entries(fCur.atoms).map(([k,v])=>`${v} ${k}`).join(', ');
-    fb.textContent='❌ Not quite. Answer: '+ans+'. Remember: subscript counts the atom before it; parentheses multiply everything inside.';
+    fb.textContent='❌ Not quite. Answer: '+ans+'. Remember: a subscript counts the atom right before it; a subscript outside parentheses multiplies everything inside.';
+    fMissQueue.push({f:fCur, due:fTurn+2});   // resurface this one in ~2 turns
+    fCheck.style.display='none'; fRetry.style.display=''; fNext.style.display='';
   }
 };
-document.getElementById('fNext').onclick=nextFormula;
+fRetry.onclick=clearInputs;
+fNext.onclick=nextFormula;
 
 /* ---------- WHY QUIZ ---------- */
 const QUIZ=[
@@ -642,9 +758,9 @@ const QUIZ=[
   {q:"Which set are the 3 metalloid trace elements?",a:["Arsenic, Boron, Silicon","Iron, Zinc, Copper","Fluorine, Iodine, Selenium","Sodium, Potassium, Calcium"],c:0,why:"Metalloids ('ABS') are part-metal, part-nonmetal: As, B, Si."},
   {q:"Why is low iron a problem for oxygen delivery?",a:["Less iron → less hemoglobin → blood carries less oxygen","Iron is what you breathe in","Iron makes the thyroid release oxygen","Iron stores sugar for energy"],c:0,why:"Iron sits at the core of hemoglobin. Less of it = anemia = fatigue and shortness of breath."}
 ];
-let qLoaded=false,qList=[],qIdx=0,qScore=0;
-function startQuiz(){
-  qList=shuffle(QUIZ); qIdx=0; qScore=0;
+let qLoaded=false,qList=[],qIdx=0,qScore=0,qMissed=[];
+function startQuiz(pool){
+  qList=shuffle(pool&&pool.length?pool:QUIZ); qIdx=0; qScore=0; qMissed=[];
   document.getElementById('qTotal').textContent=qList.length;
   document.getElementById('qDone').style.display='none';
   document.querySelector('#quiz .card').style.display='';
@@ -673,6 +789,7 @@ function answer(el,correct,item){
   else{
     el.classList.add('wrong');fb.style.color='var(--mut)';fb.textContent='💡 '+item.why;
     document.querySelectorAll('#qOpts .opt').forEach(o=>{if(o.textContent===item.a[item.c])o.classList.add('right');});
+    if(!qMissed.includes(item)) qMissed.push(item);
   }
   document.getElementById('qScore').textContent=qScore;
   document.getElementById('qNext').style.display='';
@@ -687,9 +804,13 @@ document.getElementById('qNext').onclick=()=>{
     let m=`You scored ${qScore}/${qList.length} (${pct}%)`;
     m+= pct===100?' — perfect! 🌟':pct>=75?' — great work! 💪':pct>=50?' — solid, run it again to lock it in. 📚':' — keep going, review the lecture and retry. You got this! 💙';
     document.getElementById('qFinal').textContent=m;
+    const rv=document.getElementById('qReview');
+    if(qMissed.length){ rv.style.display=''; rv.textContent=`🔁 Review the ${qMissed.length} you missed`; }
+    else rv.style.display='none';
   } else showQ();
 };
-document.getElementById('qRestart').onclick=startQuiz;
+document.getElementById('qReview').onclick=()=>startQuiz(qMissed.slice());
+document.getElementById('qRestart').onclick=()=>startQuiz();
 </script>
 <script>
 /* Register offline service worker so the app works with no internet once installed. */
