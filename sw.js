@@ -1,5 +1,6 @@
-// Offline cache so the app works with no internet once installed.
-const CACHE = 'nursing-chem-v1';
+// Offline cache. Network-first for the page so updates show right away when online;
+// falls back to cache when offline. Bump CACHE to force a clean refresh on deploys.
+const CACHE = 'nursing-chem-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -23,6 +24,23 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const isPage = e.request.mode === 'navigate' ||
+                 e.request.destination === 'document' ||
+                 e.request.url.endsWith('/') || e.request.url.endsWith('index.html');
+
+  if (isPage) {
+    // Network-first: always try fresh, cache it, fall back to cache offline.
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put('./index.html', copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match('./index.html').then(h => h || caches.match('./')))
+    );
+    return;
+  }
+
+  // Other assets: cache-first (small and stable).
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
       const copy = res.clone();
